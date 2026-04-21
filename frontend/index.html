@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Industrial AI Assistant</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- <link rel="stylesheet" href="style.css"> -->
+<link rel="stylesheet" href="/frontend/style.css">
+
+<!-- Icons -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded"/>
+
+<!-- <script src="script.js" defer></script> -->
+ <script src="/frontend/script.js" defer></script>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<header class="header">
+  <div class="logo">MFG<span>AI</span></div>
+
+  <nav class="navbar">
+    <a href="#home">Home</a>
+    <a href="#machines">Machines</a>
+    <a href="#parts">Spare Parts</a>
+    <a href="#inventory">Inventory</a>
+    <a href="#contact">Contact</a>
+  </nav>
+</header>
+
+<!-- HERO -->
+<section id="home" class="home">
+
+
+  <div class="home-content">
+    <h1>Smart <span>Industrial Assistant</span></h1>
+    <p>
+      Instantly search parts, check availability, and get real-time answers.
+      Built for engineers, service teams, and operations.
+    </p>
+
+    <div class="buttons">
+      <button>Explore System</button>
+      <button>Try Chatbot</button>
+    </div>
+  </div>
+</section>
+
+<!-- MACHINES -->
+<section id="machines" class="section">
+  <h2>Machines We Support</h2>
+  <p class="section-sub">
+    Integrated with industrial equipment for smart monitoring & service.
+  </p>
+
+  <div class="card-container">
+    <div class="card">
+      <h3>CNC Machines</h3>
+      <p>Precision manufacturing with automated controls.</p>
+    </div>
+    <div class="card">
+      <h3>Hydraulic Systems</h3>
+      <p>Pressure-based machinery with real-time monitoring.</p>
+    </div>
+    <div class="card">
+      <h3>Assembly Lines</h3>
+      <p>Track production efficiency and part usage.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PARTS -->
+<section id="parts" class="section dark">
+  <h2>Spare Parts Intelligence</h2>
+  <p class="section-sub">
+    Quickly search parts with AI and get instant insights.
+  </p>
+
+  <div class="card-container">
+    
+    <div class="card" style="background:#724ae8; color:white; border:1px solid rgba(255,255,255,0.2);">
+      <h3>Rubber Seals</h3>
+      <p>Used in leak prevention and pressure systems.</p>
+    </div>
+
+    <div class="card" style="background:#724ae8; color:white; border:1px solid rgba(255,255,255,0.2);">
+      <h3>Control Valves</h3>
+      <p>Regulate flow and maintain system stability.</p>
+    </div>
+
+    <div class="card" style="background:#724ae8; color:white; border:1px solid rgba(255,255,255,0.2);">
+      <h3>Industrial Pumps</h3>
+      <p>Move fluids efficiently across systems.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- INVENTORY -->
+<section id="inventory" class="section">
+  <h2>Inventory Insights</h2>
+  <p class="section-sub">
+    AI-powered inventory tracking with smart alerts.
+  </p>
+
+  <div class="stats">
+    <div class="stat">
+      <h3>70%</h3>
+      <p>Available Stock</p>
+    </div>
+    <div class="stat">
+      <h3>20%</h3>
+      <p>Limited Stock</p>
+    </div>
+    <div class="stat">
+      <h3>10%</h3>
+      <p>Out of Stock</p>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact" class="section contact">
+  <h2>Contact Us</h2>
+  <p>Need help? Our team is ready.</p>
+
+  <div class="contact-box">
+    <p>Email: support@mfgai.com</p>
+    <p>Phone: +91 98000 12300</p>
+  </div>
+</section>
+
+<!-- CHATBOT -->
+<button class="chatbot-toggler">
+  <span class="material-symbols-rounded">mode_comment</span>
+  <span class="material-symbols-outlined">close</span>
+</button>
+
+<div class="chatbot">
+  <header>
+    <h2>Chatbot</h2>
+    <span class="close-btn material-symbols-outlined">close</span>
+  </header>
+
+  <ul class="chatbox">
+    <li class="chat incoming">
+      <span class="material-symbols-outlined">smart_toy</span>
+      <p>Hi 👋 Ask me about parts, stock, or prices.</p>
+    </li>
+  </ul>
+
+  <div class="chat-input">
+    <textarea placeholder="Enter a message..." required></textarea>
+    <span id="send-btn" class="material-symbols-rounded">send</span>
+  </div>
+</div>
+
+</body>
+<script>
+function beep() {
+  const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+  audio.play();
+}
+</script>
+</html>
