@@ -1,8 +1,7 @@
+ollama
 fastapi
 uvicorn
 pandas
 numpy
-faiss-cpu
-sentence-transformers
-ollama
+sentence-transformers==2.2.2
 python-dotenv
