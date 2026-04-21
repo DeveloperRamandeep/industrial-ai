@@ -1,170 +1,80 @@
 import pandas as pd
-import faiss
 import numpy as np
 import re
-import random
-import sqlite3
+
 from sentence_transformers import SentenceTransformer
 from ollama import Client
 
 # =========================
-# DATA CONFIG
+# LOAD DATA FROM CSV ONLY
 # =========================
 
-random.seed(42)
+df = pd.read_csv("data.csv")
 
-CATEGORIES = {
-    "Seals": ["Oil Seal", "Pipe Seal", "Rubber Seal"],
-    "Gaskets": ["Engine Gasket", "Pump Gasket"],
-    "Valves": ["Ball Valve", "Gate Valve", "Check Valve"],
-    "Pumps": ["Water Pump", "Hydraulic Pump"]
-}
+# Ensure required columns exist
+required_cols = ["Item", "category", "stock_qty", "warehouse", "Lead Time", "Price", "Stock Status"]
 
-WAREHOUSES = ["Mumbai", "Delhi", "Bangalore", "Hyderabad"]
-
-def get_stock_status():
-    r = random.random()
-    if r < 0.7:
-        return "available"
-    elif r < 0.9:
-        return "limited"
-    else:
-        return "out_of_stock"
-
-def get_stock_qty(status):
-    if status == "available":
-        return random.randint(30, 120)
-    elif status == "limited":
-        return random.randint(5, 25)
-    else:
-        return 0
-
-def make_name(base):
-    return f"{base} Model {random.randint(100,999)}"
+for col in required_cols:
+    if col not in df.columns:
+        raise ValueError(f"Missing column in data.csv: {col}")
 
 # =========================
-# GENERATE DATA
+# LAZY MODEL LOADING
 # =========================
 
-def generate_data(n=200):
-    data = []
+_model = None
 
-    for i in range(n):
-        category = random.choice(list(CATEGORIES.keys()))
-        base_item = random.choice(CATEGORIES[category])
-
-        status = get_stock_status()
-        stock = get_stock_qty(status)
-
-        data.append({
-            "part_id": f"P-{1000+i}",
-            "Item": make_name(base_item),
-            "category": category,
-            "stock_qty": stock,
-            "warehouse": random.choice(WAREHOUSES),
-            "Lead Time": random.choice([1, 3, 5, 7, 10]),
-            "Price": round(random.uniform(500, 50000), 2),
-            "Stock Status": status
-        })
-
-    return pd.DataFrame(data)
-
-df = generate_data(200)
+def get_model():
+    global _model
+    if _model is None:
+        _model = SentenceTransformer("paraphrase-MiniLM-L3-v2")
+    return _model
 
 # =========================
-# SAVE CSV + SQLITE
-# =========================
-
-df.to_csv("data.csv", index=False)
-
-conn = sqlite3.connect("parts.db")
-cur = conn.cursor()
-
-cur.execute("DROP TABLE IF EXISTS parts")
-
-cur.execute("""
-CREATE TABLE parts (
-    part_id TEXT,
-    Item TEXT,
-    category TEXT,
-    stock_qty INTEGER,
-    warehouse TEXT,
-    Lead_Time INTEGER,
-    Price REAL,
-    Stock_Status TEXT
-)
-""")
-
-for _, r in df.iterrows():
-    cur.execute("INSERT INTO parts VALUES (?,?,?,?,?,?,?,?)", (
-        r["part_id"], r["Item"], r["category"],
-        r["stock_qty"], r["warehouse"],
-        r["Lead Time"], r["Price"], r["Stock Status"]
-    ))
-
-conn.commit()
-
-# =========================
-# FAISS SETUP
-# =========================
-
-docs = []
-rows = []
-
-for _, row in df.iterrows():
-    docs.append(f"""
-Item: {row['Item']}
-Category: {row['category']}
-Status: {row['Stock Status']}
-Price: {row['Price']}
-Stock: {row['stock_qty']}
-Warehouse: {row['warehouse']}
-""".strip())
-
-    rows.append(row)
-
-model = SentenceTransformer("all-MiniLM-L6-v2")
-embeddings = np.array(model.encode(docs)).astype("float32")
-
-index = faiss.IndexFlatL2(embeddings.shape[1])
-index.add(embeddings)
-
-# =========================
-# SEARCH
+# SIMPLE SEARCH (NO FAISS)
 # =========================
 
 def search(query, top_k=3):
-    q = model.encode([query])
-    q = np.array(q).astype("float32")
+    model = get_model()
 
-    _, idx = index.search(q, top_k)
-    return [rows[i] for i in idx[0]]
+    items = df["Item"].astype(str).tolist()
+
+    item_vecs = model.encode(items, show_progress_bar=False)
+    query_vec = model.encode([query], show_progress_bar=False)
+
+    scores = np.dot(item_vecs, query_vec.T).flatten()
+
+    top_idx = scores.argsort()[-top_k:][::-1]
+
+    return df.iloc[top_idx].to_dict(orient="records")
 
 # =========================
-# CONTEXT
+# CONTEXT BUILDER
 # =========================
 
 def build_context(results):
-    blocks = []
-    for r in results:
-        blocks.append(f"""
+    return "\n\n".join([
+        f"""
 Item: {r['Item']}
+Category: {r['category']}
 Status: {r['Stock Status']}
 Price: {r['Price']}
 Stock: {r['stock_qty']}
 Warehouse: {r['warehouse']}
-""".strip())
-    return "\n\n".join(blocks)
+Lead Time: {r['Lead Time']}
+""".strip()
+        for r in results
+    ])
 
 # =========================
-# CLEAN
+# CLEAN OUTPUT
 # =========================
 
 def clean_output(text):
     return re.sub(r"STRICT.*", "", text, flags=re.IGNORECASE).strip()
 
 # =========================
-# OLLAMA CLIENT (FIXED)
+# OLLAMA CLIENT
 # =========================
 
 API_KEY = "e1419a15f08844e4be64e32a4acb712c.Xd-U5ZIZowsiftPGq38pg3G8"
@@ -180,14 +90,21 @@ def ask_llm(context, query):
     res = client.chat(
         model="gpt-oss:120b",
         messages=[
-            {"role": "system", "content": "Answer clearly using context."},
-            {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {query}"}
+            {
+                "role": "system",
+                "content": "You are an industrial assistant. Answer using context clearly and simply."
+            },
+            {
+                "role": "user",
+                "content": f"Context:\n{context}\n\nQuestion: {query}"
+            }
         ]
     )
+
     return clean_output(res["message"]["content"])
 
 # =========================
-# CHAT
+# MAIN CHAT FUNCTION
 # =========================
 
 def chat(query):
@@ -196,11 +113,11 @@ def chat(query):
     return ask_llm(context, query)
 
 # =========================
-# RUN LOOP
+# LOCAL TEST
 # =========================
 
 if __name__ == "__main__":
-    print("\n🔥 System Ready\n")
+    print("\n🔥 CSV-Based Backend Running\n")
 
     while True:
         q = input("Ask: ")
